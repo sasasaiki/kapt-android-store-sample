@@ -4,6 +4,17 @@ apply plugin: 'kotlin-android'
 
 apply plugin: 'kotlin-android-extensions'
 
+apply plugin: 'kotlin-kapt'//ここを追加
+
+sourceSets {
+    main {
+        java {
+            srcDir "${buildDir.absolutePath}/tmp/kapt/main/kotlinGenerated/"//コマンドでビルド実行するときに必要？忘れた
+        }
+    }
+}
+
+
 android {
     compileSdkVersion 28
     defaultConfig {
