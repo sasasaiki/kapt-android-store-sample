@@ -4,11 +4,14 @@ import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import saiki.app.mypreference.MyPreference
+import saiki.app.mypreference.SavingField
 
 
 @MyPreference
 data class User(
+        @SavingField
         val name: String,
+        @SavingField
         val age: Int
 )
 
