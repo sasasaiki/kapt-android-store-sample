@@ -57,7 +57,6 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 val funGet = createGetFun(annotatedElement, annotatedClassName)
                 val funStore = createStoreFun(annotatedElement, annotatedClassName)
 
-
                 //class生成
                 val generatingClass = TypeSpec
                         .classBuilder("${annotatedClassName}_Generated")
@@ -81,15 +80,14 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
     }
 
     private val getSharedPreferencesStatement = "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
-    val context = ClassName("android.content", "Context")
+    private val context = ClassName("android.content", "Context")
     private fun createGetFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
-
 
         val fieldSets = getEnclosedFields(annotatedElement)
         val setValueStatement = fieldSets.joinToString(", ") { field -> "${field.name} = ${field.name}" }
 
         val getFromPrefStatements = fieldSets.map {
-            "val ${it.name} = preferences.getString(\"${it.name.toUpperCase()}\", \"\")"
+            "val ${it.name} = preferences.getString(\"${it.name.toUpperCase()}\", \"\") ?: \"\""
         }
 
         val creatingInstanceStatement = "return $annotatedClassName($setValueStatement)"
@@ -102,7 +100,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 .addStatement(getSharedPreferencesStatement)
                 .addStatements(getFromPrefStatements)
                 .addStatement(creatingInstanceStatement)
-                .addParameter("context",context)
+                .addParameter("context", context)
                 .returns(returnClass)
                 .build()
     }
@@ -111,8 +109,8 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
         val fieldSets = getEnclosedFields(annotatedElement)
 
-    val argName = annotatedClassName.toLowerCase()
-    val storeForPrefStatements = fieldSets.map {
+        val argName = annotatedClassName.toLowerCase()
+        val storeForPrefStatements = fieldSets.map {
             "editor.putString(\"${it.name.toUpperCase()}\", $argName.${it.name})"
         }
 
@@ -121,15 +119,16 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         val parameterClass = ClassName.bestGuess(type.toString())
         return FunSpec
                 .builder("store")
-                .addParameter(argName,parameterClass)
-                .addParameter("context",context)
+                .addParameter(argName, parameterClass)
+                .addParameter("context", context)
                 .addStatement(getSharedPreferencesStatement)
                 .addStatement("val editor = preferences.edit()")
                 .addStatements(storeForPrefStatements)
+                .addStatement("editor.apply()")
                 .build()
     }
 
-    private fun FunSpec.Builder.addStatements(statements : List<String>) : FunSpec.Builder {
+    private fun FunSpec.Builder.addStatements(statements: List<String>): FunSpec.Builder {
         statements.forEach { this.addStatement(it) }
         return this
     }

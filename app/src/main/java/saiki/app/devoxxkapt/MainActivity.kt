@@ -34,6 +34,21 @@ class MainActivity : AppCompatActivity() {
         */
     }
 
+    fun get(context: Context): User {
+        val preferences = context.getSharedPreferences("DATA", Context.MODE_PRIVATE)
+        val name = preferences.getString("NAME", "") ?: ""
+        val age = preferences.getString("AGE", "") ?: ""
+        return User(name = name, age = age)
+    }
+
+    fun store(user: User, context: Context) {
+        val preferences = context.getSharedPreferences("DATA", Context.MODE_PRIVATE)
+        val editor = preferences.edit()
+        editor.putString("NAME", user.name)
+        editor.putString("AGE", user.age)
+        editor.apply()
+    }
+
 }
 
 
