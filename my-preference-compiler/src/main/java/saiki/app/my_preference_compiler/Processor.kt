@@ -1,23 +1,17 @@
-package saiki.app.my_preference_compiler
-
+package saiki.app.mypreferencecompiler
 
 import com.google.auto.common.BasicAnnotationProcessor
 import com.google.auto.service.AutoService
 import com.google.common.collect.SetMultimap
-import com.squareup.kotlinpoet.FileSpec
-import com.squareup.kotlinpoet.FunSpec
-import com.squareup.kotlinpoet.TypeSpec
+import com.squareup.kotlinpoet.*
 import saiki.app.mypreference.MyPreference
 import java.io.File
 import javax.annotation.processing.Processor
 import javax.lang.model.SourceVersion
 import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
-import com.squareup.kotlinpoet.ClassName
-import saiki.app.mypreference.SavingField
 import javax.annotation.processing.Messager
 import javax.lang.model.type.TypeMirror
-import javax.tools.Diagnostic
 
 
 @AutoService(Processor::class)//auto-service使うのに必要なので忘れずに
@@ -56,33 +50,19 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                     throw Exception("@${MyPreference::class.java.simpleName} can annotate class type.")
                 }
 
+
                 // fieldにつけると$が付いてくることがあるらしいのであればとる
                 val annotatedClassName = annotatedElement.simpleName.toString().trimDollarIfNeeded()
 
-                val type = annotatedElement.asType()
-                val returnClass = ClassName.bestGuess(type.toString())
+                val funGet = createGetFun(annotatedElement, annotatedClassName)
+                val funStore = createStoreFun(annotatedElement, annotatedClassName)
 
-                messager.printMessage(Diagnostic.Kind.WARNING, "return class" + returnClass.toString())
-                messager.printMessage(Diagnostic.Kind.WARNING, "type name ? " + type.toString())
-
-
-                val getMethod = """
-                    return $annotatedClassName(name = "aa", age = 10)
-                """.trimIndent()
-
-                enclosed(element = annotatedElement)
-
-                //func生成
-                val generatingFunc = FunSpec
-                        .builder("get")
-                        .addStatement(getMethod)
-                        .returns(returnClass)
-                        .build()
 
                 //class生成
                 val generatingClass = TypeSpec
                         .classBuilder("${annotatedClassName}_Generated")
-                        .addFunction(generatingFunc)
+                        .addFunction(funGet)
+                        .addFunction(funStore)
                         .build()
 
                 //書き込み
@@ -100,26 +80,82 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         return mutableSetOf()
     }
 
-    private fun getEnclosedFields(element: Element): List<FieldSet> {
+    private val getSharedPreferencesStatement = "val preferences = getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
+    private fun createGetFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
+
+
+        val fieldSets = getEnclosedFields(annotatedElement)
+        val setValueStatement = fieldSets.joinToString(", ") { field -> "${field.name} = ${field.name}" }
+
+        val getFromPrefStatements = fieldSets.map {
+            "val ${it.name} = preferences.getString(\"${it.name.toUpperCase()}\", \"\")"
+        }
+
+        val creatingInstanceStatement = "return $annotatedClassName($setValueStatement)"
+
+        //func生成
+        val type = annotatedElement.asType()
+        val returnClass = ClassName.bestGuess(type.toString())
+        return FunSpec
+                .builder("store")
+                .addStatement(getSharedPreferencesStatement)
+                .addStatements(getFromPrefStatements)
+                .addStatement(creatingInstanceStatement)
+    //                        .addParameter("context",Context)
+                .returns(returnClass)
+                .build()
+    }
+
+//    fun store(user: User) {
+//        val preferences = getSharedPreferences("DATA", Context.MODE_PRIVATE)
+//
+//        val editor = preferences.edit()
+//        editor.putString("NAME", user.name)
+//        editor.putInt("AGE", user.age)
+//        editor.apply()
+//    }
+    private fun createStoreFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
+
+        val fieldSets = getEnclosedFields(annotatedElement)
+
+    val argName = annotatedClassName.toLowerCase()
+    val storeForPrefStatements = fieldSets.map {
+            "editor.putString(\"${it.name.toUpperCase()}\", $argName.${it.name})"
+        }
+
+        //func生成
+        val type = annotatedElement.asType()
+        val parameterClass = ClassName.bestGuess(type.toString())
+        return FunSpec
+                .builder("get")
+                .addParameter(argName,parameterClass)
+                .addStatement(getSharedPreferencesStatement)
+                .addStatement("val editor = preferences.edit()")
+                .addStatements(storeForPrefStatements)
+                .build()
+    }
+
+    private fun FunSpec.Builder.addStatements(statements : List<String>) : FunSpec.Builder {
+        statements.forEach { this.addStatement(it) }
+        return this
+    }
+
+    private fun getEnclosedFields(element: Element): MutableList<FieldSet> {
         val fields = mutableListOf<FieldSet>()
         for (el in element.enclosedElements) {
             if (el.kind == ElementKind.FIELD) {
-                fields.add(
-                        FieldSet(
-                                el.simpleName.toString(),
-                                el.asType()
-                        )
+                val fieldSet = FieldSet(
+                        el.simpleName.toString(),
+                        el.asType()
                 )
+
+                fields.add(fieldSet)
             }
-            val fieldName = el.simpleName.toString()
-
-
-            messager.printMessage(Diagnostic.Kind.WARNING, "type ${el.asType()}")
-            messager.printMessage(Diagnostic.Kind.WARNING, "kind ${el.kind}")
-            messager.printMessage(Diagnostic.Kind.WARNING, "名前 $fieldName")
-
         }
+
+        return fields
     }
+
 
     data class FieldSet(val name: String, val type: TypeMirror)
 
