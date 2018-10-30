@@ -12,7 +12,7 @@ data class User(
         @SavingField
         val name: String,
         @SavingField
-        val age: Int
+        val age: String
 )
 
 class MainActivity : AppCompatActivity() {

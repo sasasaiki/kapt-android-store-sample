@@ -80,7 +80,8 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         return mutableSetOf()
     }
 
-    private val getSharedPreferencesStatement = "val preferences = getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
+    private val getSharedPreferencesStatement = "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
+    val context = ClassName("android.content", "Context")
     private fun createGetFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
 
 
@@ -97,23 +98,15 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         val type = annotatedElement.asType()
         val returnClass = ClassName.bestGuess(type.toString())
         return FunSpec
-                .builder("store")
+                .builder("get")
                 .addStatement(getSharedPreferencesStatement)
                 .addStatements(getFromPrefStatements)
                 .addStatement(creatingInstanceStatement)
-    //                        .addParameter("context",Context)
+                .addParameter("context",context)
                 .returns(returnClass)
                 .build()
     }
 
-//    fun store(user: User) {
-//        val preferences = getSharedPreferences("DATA", Context.MODE_PRIVATE)
-//
-//        val editor = preferences.edit()
-//        editor.putString("NAME", user.name)
-//        editor.putInt("AGE", user.age)
-//        editor.apply()
-//    }
     private fun createStoreFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
 
         val fieldSets = getEnclosedFields(annotatedElement)
@@ -127,8 +120,9 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         val type = annotatedElement.asType()
         val parameterClass = ClassName.bestGuess(type.toString())
         return FunSpec
-                .builder("get")
+                .builder("store")
                 .addParameter(argName,parameterClass)
+                .addParameter("context",context)
                 .addStatement(getSharedPreferencesStatement)
                 .addStatement("val editor = preferences.edit()")
                 .addStatements(storeForPrefStatements)
