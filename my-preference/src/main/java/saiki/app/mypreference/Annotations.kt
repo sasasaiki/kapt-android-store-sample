@@ -1,7 +1,7 @@
 package saiki.app.mypreference
 
 @Target(AnnotationTarget.CLASS)
-annotation class MyPreference
+annotation class Savable
 
-@Target(AnnotationTarget.FIELD)
-annotation class SavingField
+//@Target(AnnotationTarget.FIELD)
+//annotation class SavingField

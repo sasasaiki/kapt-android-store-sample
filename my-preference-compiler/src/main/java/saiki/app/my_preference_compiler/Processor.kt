@@ -4,7 +4,8 @@ import com.google.auto.common.BasicAnnotationProcessor
 import com.google.auto.service.AutoService
 import com.google.common.collect.SetMultimap
 import com.squareup.kotlinpoet.*
-import saiki.app.mypreference.MyPreference
+import saiki.app.mypreference.IMyPreference
+import saiki.app.mypreference.Savable
 import java.io.File
 import javax.annotation.processing.Processor
 import javax.lang.model.SourceVersion
@@ -12,6 +13,8 @@ import javax.lang.model.element.Element
 import javax.lang.model.element.ElementKind
 import javax.annotation.processing.Messager
 import javax.lang.model.type.TypeMirror
+import javax.tools.Diagnostic
+
 
 
 @AutoService(Processor::class)//auto-service使うのに必要なので忘れずに
@@ -21,7 +24,9 @@ class MyProcessor : BasicAnnotationProcessor() {
         private const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"//こういうもんらしい
     }
 
+
     override fun getSupportedSourceVersion() = SourceVersion.latestSupported()!!//コンパイラのサポートバージョンを指定
+
 
     override fun initSteps(): MutableIterable<ProcessingStep> {
         val outputDirectory = processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]
@@ -31,7 +36,6 @@ class MyProcessor : BasicAnnotationProcessor() {
 
         val messager = super.processingEnv.messager
 
-
         //ここでStepたちを渡すと実行される
         return mutableListOf(MyProcessingStep(outputDir = outputDirectory, messager = messager))
     }
@@ -39,15 +43,17 @@ class MyProcessor : BasicAnnotationProcessor() {
 
 class MyProcessingStep(private val outputDir: File, private val messager: Messager) : BasicAnnotationProcessor.ProcessingStep {
 
-    override fun annotations() = mutableSetOf(MyPreference::class.java)//どのアノテーションを処理するか羅列
+    override fun annotations() = mutableSetOf(Savable::class.java)//どのアノテーションを処理するか羅列
+
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>?): MutableSet<Element> {
+        messager.printMessage(Diagnostic.Kind.WARNING,"My processor start !!")
         elementsByAnnotation ?: return mutableSetOf()
         try {
-            for (annotatedElement in elementsByAnnotation[MyPreference::class.java]) {
+            for (annotatedElement in elementsByAnnotation[Savable::class.java]) {
 
                 if (annotatedElement.kind !== ElementKind.CLASS) {//今回はClassしかこないが念のためチェック
-                    throw Exception("@${MyPreference::class.java.simpleName} can annotate class type.")
+                    throw Exception("@${Savable::class.java.simpleName} can annotate class type.")
                 }
 
 
@@ -57,15 +63,20 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 val funGet = createGetFun(annotatedElement, annotatedClassName)
                 val funStore = createStoreFun(annotatedElement, annotatedClassName)
 
+
+                val type = annotatedElement.asType()
+                val a = ParameterizedTypeName.get(IMyPreference::class.asClassName(),type.asTypeName(),context)
+
                 //class生成
                 val generatingClass = TypeSpec
                         .classBuilder("${annotatedClassName}_Generated")
+                        .addSuperinterface(a)
                         .addFunction(funGet)
                         .addFunction(funStore)
                         .build()
 
                 //書き込み
-                FileSpec.builder("app.saiki.mypreference", generatingClass.name!!)
+                FileSpec.builder("saiki.app.mypreference", generatingClass.name!!)
                         .addType(generatingClass)
                         .build()
                         .writeTo(outputDir)
@@ -75,12 +86,17 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
             throw e
         }
 
+        messager.printMessage(Diagnostic.Kind.WARNING,"My processor finish !!")
+
         // ここで何かしらをreturnすると次のステップでごにょごにょできるらしい？
         return mutableSetOf()
     }
 
+
     private val getSharedPreferencesStatement = "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
     private val context = ClassName("android.content", "Context")
+
+
     private fun createGetFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
 
         val fieldSets = getEnclosedFields(annotatedElement)
@@ -97,6 +113,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         val returnClass = ClassName.bestGuess(type.toString())
         return FunSpec
                 .builder("get")
+                .addModifiers(KModifier.OVERRIDE)
                 .addStatement(getSharedPreferencesStatement)
                 .addStatements(getFromPrefStatements)
                 .addStatement(creatingInstanceStatement)
@@ -105,13 +122,13 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 .build()
     }
 
+
     private fun createStoreFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
 
         val fieldSets = getEnclosedFields(annotatedElement)
 
-        val argName = annotatedClassName.toLowerCase()
         val storeForPrefStatements = fieldSets.map {
-            "editor.putString(\"${it.name.toUpperCase()}\", $argName.${it.name})"
+            "editor.putString(\"${it.name.toUpperCase()}\", target.${it.name})"
         }
 
         //func生成
@@ -119,7 +136,8 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         val parameterClass = ClassName.bestGuess(type.toString())
         return FunSpec
                 .builder("store")
-                .addParameter(argName, parameterClass)
+                .addModifiers(KModifier.OVERRIDE)
+                .addParameter("target", parameterClass)
                 .addParameter("context", context)
                 .addStatement(getSharedPreferencesStatement)
                 .addStatement("val editor = preferences.edit()")
@@ -128,10 +146,12 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 .build()
     }
 
+
     private fun FunSpec.Builder.addStatements(statements: List<String>): FunSpec.Builder {
         statements.forEach { this.addStatement(it) }
         return this
     }
+
 
     private fun getEnclosedFields(element: Element): MutableList<FieldSet> {
         val fields = mutableListOf<FieldSet>()

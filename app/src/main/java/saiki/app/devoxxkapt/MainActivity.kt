@@ -3,15 +3,14 @@ package saiki.app.devoxxkapt
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import kotlinx.android.synthetic.main.activity_main.*
+import saiki.app.mypreference.IMyPreference
 import saiki.app.mypreference.MyPreference
-import saiki.app.mypreference.SavingField
+import saiki.app.mypreference.Savable
 
-
-@MyPreference
+@Savable
 data class User(
-        @SavingField
         val name: String,
-        @SavingField
         val age: String
 )
 
@@ -20,6 +19,17 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
+
+        val user = getUser(context = this)
+
+        store_name_button.setOnClickListener {
+            val newUser = user.copy(name = name_text_area.text.toString())
+            storeUser(newUser, this)
+        }
+
+        val pref = MyPreference.getInstance(User::class.java,Context::class.java)
+        val foo = pref.get(context = this)
+        pref.store(foo.copy(name = "new"),this)
 
         /*
         //保存されているユーザーを取ってくる
@@ -32,16 +42,17 @@ class MainActivity : AppCompatActivity() {
             MyPreferences.store(newUser)
         }
         */
+
     }
 
-    fun get(context: Context): User {
+    private fun getUser(context: Context): User {
         val preferences = context.getSharedPreferences("DATA", Context.MODE_PRIVATE)
         val name = preferences.getString("NAME", "") ?: ""
         val age = preferences.getString("AGE", "") ?: ""
         return User(name = name, age = age)
     }
 
-    fun store(user: User, context: Context) {
+    private fun storeUser(user: User, context: Context) {
         val preferences = context.getSharedPreferences("DATA", Context.MODE_PRIVATE)
         val editor = preferences.edit()
         editor.putString("NAME", user.name)
