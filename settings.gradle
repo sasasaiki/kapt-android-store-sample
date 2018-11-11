@@ -1,1 +1,1 @@
-include ':app', ':common', ':compiler'
+include ':app', ':common', ':compiler', ':runtime'
