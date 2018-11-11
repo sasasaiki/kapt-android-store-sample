@@ -26,7 +26,7 @@ class MainActivity : AppCompatActivity() {
             storeUser(newUser, this)
         }
 
-        val pref = MyPreference.getInstance(User::class.java,Context::class.java)
+        val pref = MyPreference.getInstance(User::class.java)
         val foo = pref.get(context = this)
         pref.store(foo.copy(name = "new"),this)
 

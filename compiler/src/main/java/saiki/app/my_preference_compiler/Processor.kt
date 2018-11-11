@@ -4,7 +4,6 @@ import com.google.auto.common.BasicAnnotationProcessor
 import com.google.auto.service.AutoService
 import com.google.common.collect.SetMultimap
 import com.squareup.kotlinpoet.*
-import saiki.app.mypreference.IMyPreference
 import saiki.app.mypreference.Savable
 import java.io.File
 import javax.annotation.processing.Processor
@@ -61,22 +60,22 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 val annotatedClassName = annotatedElement.simpleName.toString().trimDollarIfNeeded()
 
                 val funGet = createGetFun(annotatedElement, annotatedClassName)
-                val funStore = createStoreFun(annotatedElement, annotatedClassName)
+                val funStore = createStoreFun(annotatedElement)
 
 
                 val type = annotatedElement.asType()
-                val a = ParameterizedTypeName.get(IMyPreference::class.asClassName(),type.asTypeName(),context)
-
+                val myPrefInterface = ClassName("saiki.app.runtime","IMyPreference")
+                val genericClass = ParameterizedTypeName.get(myPrefInterface,type.asTypeName())
                 //class生成
                 val generatingClass = TypeSpec
                         .classBuilder("${annotatedClassName}_Generated")
-                        .addSuperinterface(a)
+                        .addSuperinterface(genericClass)
                         .addFunction(funGet)
                         .addFunction(funStore)
                         .build()
 
                 //書き込み
-                FileSpec.builder("saiki.app.mypreference", generatingClass.name!!)
+                FileSpec.builder("saiki.app.runtime", generatingClass.name!!)
                         .addType(generatingClass)
                         .build()
                         .writeTo(outputDir)
@@ -95,7 +94,6 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
     private val getSharedPreferencesStatement = "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
     private val context = ClassName("android.content", "Context")
-
 
     private fun createGetFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
 
@@ -123,7 +121,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
     }
 
 
-    private fun createStoreFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
+    private fun createStoreFun(annotatedElement: Element): FunSpec {
 
         val fieldSets = getEnclosedFields(annotatedElement)
 
