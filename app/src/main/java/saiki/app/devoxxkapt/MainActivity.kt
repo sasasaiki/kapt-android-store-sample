@@ -4,9 +4,8 @@ import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
 import kotlinx.android.synthetic.main.activity_main.*
-import saiki.app.mypreference.IMyPreference
-import saiki.app.mypreference.MyPreference
 import saiki.app.mypreference.Savable
+import saiki.app.runtime.MyPreference
 
 @Savable
 data class User(
