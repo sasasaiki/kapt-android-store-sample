@@ -47,6 +47,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>?): MutableSet<Element> {
         messager.printMessage(Diagnostic.Kind.WARNING,"My processor start !!")
+
         elementsByAnnotation ?: return mutableSetOf()
         try {
             for (annotatedElement in elementsByAnnotation[Savable::class.java]) {
