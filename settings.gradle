@@ -1,1 +1,1 @@
-include ':app', ':my-preference', ':my-preference-compiler'
+include ':app', ':common', ':compiler'
