@@ -126,23 +126,38 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
         val fieldSets = getEnclosedFields(annotatedElement)
 
-        val storeForPrefStatements = fieldSets.map {
-            "editor.putString(\"${it.name.toUpperCase()}\", target.${it.name})"
-        }
 
         //func生成
         val type = annotatedElement.asType()
         val parameterClass = ClassName.bestGuess(type.toString())
+        val context = ClassName("android.content", "Context")
         return FunSpec
                 .builder("store")
                 .addModifiers(KModifier.OVERRIDE)
                 .addParameter("target", parameterClass)
                 .addParameter("context", context)
-                .addStatement(getSharedPreferencesStatement)
+                .addStatement( "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)")
                 .addStatement("val editor = preferences.edit()")
-                .addStatements(storeForPrefStatements)
+                .addStatements(createSotreStatements(fieldSets))
                 .addStatement("editor.apply()")
                 .build()
+    }
+    /*
+
+    override fun store(target: User, context: Context) {
+        val preferences = context.getSharedPreferences("DATA", Context.MODE_PRIVATE)
+        val editor = preferences.edit()
+        editor.putString("NAME", target.name)
+        editor.putString("AGE", target.age)
+        editor.apply()
+    }
+
+    */
+
+    private fun createSotreStatements(fieldSets: MutableList<FieldSet>): List<String> {
+        return fieldSets.map {
+            "editor.putString(\"${it.name.toUpperCase()}\", target.${it.name})"
+        }
     }
 
 
