@@ -1,4 +1,4 @@
 package saiki.app.mypreference
 
 @Target(AnnotationTarget.CLASS)
-annotation class YourAnnotation
+annotation class Savable

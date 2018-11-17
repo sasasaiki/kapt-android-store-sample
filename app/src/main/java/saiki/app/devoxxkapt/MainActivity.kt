@@ -3,11 +3,10 @@ package saiki.app.devoxxkapt
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import kotlinx.android.synthetic.main.activity_main.*
-import saiki.app.mypreference.YourAnnotation
-import saiki.app.runtime.MyPreference
+import saiki.app.mypreference.Savable
+import saiki.app.runtime.User_Generated
 
-@YourAnnotation
+@Savable
 data class User(
         val name: String,
         val age: String
@@ -35,14 +34,9 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val pref = MyPreference.getInstance(User::class.java)
-
-
-        val user = pref.get(context = this)
-
-        store_name_button.setOnClickListener {
-            pref.store(user.copy(name = "new"),this)
-        }
+        val pref = User_Generated()
+        pref.store(User("",""),this)
+        val user = pref.get(this)
     }
 
 }
