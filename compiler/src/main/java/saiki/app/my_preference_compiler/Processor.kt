@@ -4,7 +4,7 @@ import com.google.auto.common.BasicAnnotationProcessor
 import com.google.auto.service.AutoService
 import com.google.common.collect.SetMultimap
 import com.squareup.kotlinpoet.*
-import saiki.app.mypreference.Savable
+import saiki.app.mypreference.Foo
 import java.io.File
 import javax.annotation.processing.Processor
 import javax.lang.model.SourceVersion
@@ -42,7 +42,7 @@ class MyProcessor : BasicAnnotationProcessor() {
 
 class MyProcessingStep(private val outputDir: File, private val messager: Messager) : BasicAnnotationProcessor.ProcessingStep {
 
-    override fun annotations() = mutableSetOf(Savable::class.java)//どのアノテーションを処理するか羅列
+    override fun annotations() = mutableSetOf(Foo::class.java)//どのアノテーションを処理するか羅列
 
     //main part
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>?): MutableSet<Element> {
@@ -50,10 +50,10 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
         elementsByAnnotation ?: return mutableSetOf()
         try {
-            for (annotatedElement in elementsByAnnotation[Savable::class.java]) {
+            for (annotatedElement in elementsByAnnotation[Foo::class.java]) {
 
                 if (annotatedElement.kind !== ElementKind.CLASS) {//今回はClassしかこないが念のためチェック
-                    throw Exception("@${Savable::class.java.simpleName} can annotate class type.")
+                    throw Exception("@${Foo::class.java.simpleName} can annotate class type.")
                 }
 
 
@@ -132,7 +132,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 .addParameter("context",context)
                 .addStatement("val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)")
                 .addStatement("val editor = preferences.edit()")
-                .addStatements(createSotreStatements(fields))
+                .addStatements(createStoreStatements(fields))
                 .addStatement("editor.apply()")
                 .build()
     }
@@ -148,7 +148,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
     */
 
-    private fun createSotreStatements(fieldSets: MutableList<FieldSet>): List<String> {
+    private fun createStoreStatements(fieldSets: MutableList<FieldSet>): List<String> {
         return fieldSets.map {
             "editor.putString(\"${it.name.toUpperCase()}\", target.${it.name})"
         }
