@@ -4,7 +4,7 @@ import com.google.auto.common.BasicAnnotationProcessor
 import com.google.auto.service.AutoService
 import com.google.common.collect.SetMultimap
 import com.squareup.kotlinpoet.*
-import saiki.app.mypreference.Savable
+import saiki.app.mypreference.YourAnnotation
 import java.io.File
 import javax.annotation.processing.Processor
 import javax.lang.model.SourceVersion
@@ -42,18 +42,18 @@ class MyProcessor : BasicAnnotationProcessor() {
 
 class MyProcessingStep(private val outputDir: File, private val messager: Messager) : BasicAnnotationProcessor.ProcessingStep {
 
-    override fun annotations() = mutableSetOf(Savable::class.java)//どのアノテーションを処理するか羅列
+    override fun annotations() = mutableSetOf(YourAnnotation::class.java)//どのアノテーションを処理するか羅列
 
-
+    //main part
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>?): MutableSet<Element> {
         messager.printMessage(Diagnostic.Kind.WARNING,"My processor start !!")
 
         elementsByAnnotation ?: return mutableSetOf()
         try {
-            for (annotatedElement in elementsByAnnotation[Savable::class.java]) {
+            for (annotatedElement in elementsByAnnotation[YourAnnotation::class.java]) {
 
                 if (annotatedElement.kind !== ElementKind.CLASS) {//今回はClassしかこないが念のためチェック
-                    throw Exception("@${Savable::class.java.simpleName} can annotate class type.")
+                    throw Exception("@${YourAnnotation::class.java.simpleName} can annotate class type.")
                 }
 
 
@@ -124,21 +124,18 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
     private fun createStoreFun(annotatedElement: Element): FunSpec {
 
-        val fieldSets = getEnclosedFields(annotatedElement)
-
-
-        //func生成
-        val type = annotatedElement.asType()
-        val parameterClass = ClassName.bestGuess(type.toString())
-        val context = ClassName("android.content", "Context")
+        val typeString = annotatedElement.asType().toString()
+        val className = ClassName.bestGuess(typeString)
+        val fields = getEnclosedFields(annotatedElement)
+        val contex = ClassName("android.content", "Context")
         return FunSpec
                 .builder("store")
                 .addModifiers(KModifier.OVERRIDE)
-                .addParameter("target", parameterClass)
-                .addParameter("context", context)
-                .addStatement( "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)")
+                .addParameter("target",className)
+                .addParameter("context",contex)
+                .addStatement("val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)")
                 .addStatement("val editor = preferences.edit()")
-                .addStatements(createSotreStatements(fieldSets))
+                .addStatements(createSotreStatements(fields))
                 .addStatement("editor.apply()")
                 .build()
     }
@@ -191,4 +188,23 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         val index = indexOf("$")
         return if (index == -1) this else substring(0, index)
     }
+
+
+
+//    val fieldSets = getEnclosedFields(annotatedElement)
+//
+//    //func生成
+//    val type = annotatedElement.asType()
+//    val parameterClass = ClassName.bestGuess(type.toString())
+//    val context = ClassName("android.content", "Context")
+//    return FunSpec
+//    .builder("store")
+//    .addModifiers(KModifier.OVERRIDE)
+//    .addParameter("target", parameterClass)
+//    .addParameter("context", context)
+//    .addStatement( "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)")
+//    .addStatement("val editor = preferences.edit()")
+//    .addStatements(createSotreStatements(fieldSets))
+//    .addStatement("editor.apply()")
+//    .build()
 }
