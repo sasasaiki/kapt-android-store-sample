@@ -94,10 +94,10 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
 
     private val getSharedPreferencesStatement = "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
-    private val context = ClassName("android.content", "Context")
 
     private fun createGetFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
 
+        val context = ClassName("android.content", "Context")
         val fieldSets = getEnclosedFields(annotatedElement)
         val setValueStatement = fieldSets.joinToString(", ") { field -> "${field.name} = ${field.name}" }
 
@@ -123,10 +123,6 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
 
     private fun createStoreFun(annotatedElement: Element): FunSpec {
-
-        val type= annotatedElement.asType().toString()
-        val className = ClassName.bestGuess(type)
-        val context = ClassName("android.conte","Context")
 
         val fields = getEnclosedFields(annotatedElement)
         return FunSpec

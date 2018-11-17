@@ -3,10 +3,7 @@ package saiki.app.devoxxkapt
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
-import saiki.app.mypreference.Savable
-import saiki.app.runtime.User_Generated
 
-@Savable
 data class User(
         val name: String,
         val age: String
@@ -33,10 +30,6 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
-
-        val pref = User_Generated()
-        pref.store(User("",""),this)
-        val user = pref.get(this)
     }
 
 }
