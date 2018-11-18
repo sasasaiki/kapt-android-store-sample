@@ -17,14 +17,6 @@ fun store(target: User, context: Context) {
     editor.apply()
 }
 
-fun get(context: Context): User {
-    val preferences = context.getSharedPreferences("DATA", Context.MODE_PRIVATE)
-    val name = preferences.getString("NAME", "") ?: ""
-    val age = preferences.getString("AGE", "") ?: ""
-    return User(name = name, age = age)
-}
-
-
 class MainActivity : AppCompatActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
