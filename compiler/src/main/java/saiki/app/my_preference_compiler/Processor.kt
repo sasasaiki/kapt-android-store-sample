@@ -99,7 +99,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         return FunSpec
                 .builder("store")
                 .addModifiers(KModifier.OVERRIDE)
-                .addParameter("target",className)
+                .addParameter("target",typeName)
                 .addParameter("context",context)
                 .addStatement("val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)")
                 .addStatement("val editor = preferences.edit()")
