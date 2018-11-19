@@ -60,7 +60,6 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 // fieldにつけると$が付いてくることがあるらしいのであればとる
                 val annotatedClassName = annotatedElement.simpleName.toString().trimDollarIfNeeded()
 
-                val funGet = createGetFun(annotatedElement, annotatedClassName)
                 val funStore = createStoreFun(annotatedElement)
 
 
@@ -71,7 +70,6 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 val generatingClass = TypeSpec
                         .classBuilder("${annotatedClassName}_Generated")
                         .addSuperinterface(genericClass)
-                        .addFunction(funGet)
                         .addFunction(funStore)
                         .build()
 
@@ -93,38 +91,11 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
     }
 
 
-    private val getSharedPreferencesStatement = "val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)"
-
-    private fun createGetFun(annotatedElement: Element, annotatedClassName: String): FunSpec {
-
-        val context = ClassName("android.content", "Context")
-        val fieldSets = getEnclosedFields(annotatedElement)
-        val setValueStatement = fieldSets.joinToString(", ") { field -> "${field.name} = ${field.name}" }
-
-        val getFromPrefStatements = fieldSets.map {
-            "val ${it.name} = preferences.getString(\"${it.name.toUpperCase()}\", \"\") ?: \"\""
-        }
-
-        val creatingInstanceStatement = "return $annotatedClassName($setValueStatement)"
-
-        //func生成
-        val type = annotatedElement.asType()
-        val returnClass = ClassName.bestGuess(type.toString())
-        return FunSpec
-                .builder("get")
-                .addModifiers(KModifier.OVERRIDE)
-                .addStatement(getSharedPreferencesStatement)
-                .addStatements(getFromPrefStatements)
-                .addStatement(creatingInstanceStatement)
-                .addParameter("context", context)
-                .returns(returnClass)
-                .build()
-    }
-
 
     private fun createStoreFun(annotatedElement: Element): FunSpec {
 
         val fields = getEnclosedFields(annotatedElement)
+
         return FunSpec
                 .builder("store")
                 .addModifiers(KModifier.OVERRIDE)

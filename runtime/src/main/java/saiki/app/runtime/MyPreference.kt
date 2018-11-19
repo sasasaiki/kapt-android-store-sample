@@ -13,7 +13,6 @@ class MyPreference {
 }
 
 interface IMyPreference<T> {
-    fun get(context: Context) : T
     fun store(target: T, context: Context)
 }
 

@@ -3,6 +3,10 @@ package saiki.app.devoxxkapt
 import android.content.Context
 import android.support.v7.app.AppCompatActivity
 import android.os.Bundle
+import saiki.app.mypreference.Foo
+
+
+
 
 data class User(
         val name: String,
