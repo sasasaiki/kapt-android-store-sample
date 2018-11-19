@@ -2,7 +2,7 @@ package saiki.app.runtime
 
 import android.content.Context
 
-class MyPreference {
+class ThatWay {
     companion object {
         @Suppress("UNCHECKED_CAST")
         fun <T> getInstance(target: Class<T>): IMyPreference<T> {
