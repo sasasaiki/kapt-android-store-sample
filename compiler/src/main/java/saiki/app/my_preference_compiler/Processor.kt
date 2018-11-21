@@ -93,6 +93,7 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
 
     private fun createStoreFun(annotatedElement: Element): FunSpec {
+        val typeName = annotatedElement.asType().asTypeName()//User
 
         val fields = getEnclosedFields(annotatedElement)
 
