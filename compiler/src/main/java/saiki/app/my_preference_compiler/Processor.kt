@@ -98,6 +98,8 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
         val fields = getEnclosedFields(annotatedElement)
 
         val context = ClassName("android.content","Context")
+
+
         return FunSpec
                 .builder("store")
                 .addModifiers(KModifier.OVERRIDE)
