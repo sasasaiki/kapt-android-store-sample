@@ -9,8 +9,8 @@ import saiki.app.mypreference.Foo
 
 
 data class User(
-        val name: String,
-        val age: String
+        val name: String = "",
+        val age: String = ""
 )
 
 fun store(target: User, context: Context) {
