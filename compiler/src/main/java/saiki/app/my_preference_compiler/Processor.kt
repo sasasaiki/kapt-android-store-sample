@@ -15,65 +15,65 @@ import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
 
 
-
-@AutoService(Processor::class)//auto-service使うのに必要なので忘れずに
+@AutoService(Processor::class)// do not forget for auto-service
 class MyProcessor : BasicAnnotationProcessor() {
-    //AbstractProcessorもしくはBasicAnnotationProcessorを継承する
+    // Implement AbstractProcessor or BasicAnnotationProcessor
     companion object {
-        private const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"//こういうもんらしい
+        private const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"// Decided words
     }
 
 
-    override fun getSupportedSourceVersion() = SourceVersion.latestSupported()!!//コンパイラのサポートバージョンを指定
+    override fun getSupportedSourceVersion() = SourceVersion.latestSupported()!!// Support version of compiler
 
 
     override fun initSteps(): MutableIterable<ProcessingStep> {
         val outputDirectory = processingEnv.options[KAPT_KOTLIN_GENERATED_OPTION_NAME]
-                ?.replace("kaptKotlin", "kapt")//ここでkaptKotlinをkaptに変えないと生成後のclassが読めない
+                ?.replace("kaptKotlin", "kapt")// You can not read the generated class unless kaptKotlin is changed to kapt
                 ?.let { File(it) }
                 ?: throw IllegalArgumentException("No output directory!")
 
         val messager = super.processingEnv.messager
 
-        //ここでStepたちを渡すと実行される
+        // Providing my processing step
         return mutableListOf(MyProcessingStep(outputDir = outputDirectory, messager = messager))
     }
 }
 
 class MyProcessingStep(private val outputDir: File, private val messager: Messager) : BasicAnnotationProcessor.ProcessingStep {
 
-    override fun annotations() = mutableSetOf(Foo::class.java)//どのアノテーションを処理するか羅列
+    override fun annotations() = mutableSetOf(Foo::class.java)// List which annotations are processed
 
     //main part
     override fun process(elementsByAnnotation: SetMultimap<Class<out Annotation>, Element>?): MutableSet<Element> {
-        messager.printMessage(Diagnostic.Kind.WARNING,"My processor start !!")
+        messager.printMessage(Diagnostic.Kind.WARNING, "My processor start !!")
 
         elementsByAnnotation ?: return mutableSetOf()
         try {
             for (annotatedElement in elementsByAnnotation[Foo::class.java]) {
 
-                if (annotatedElement.kind !== ElementKind.CLASS) {//今回はClassしかこないが念のためチェック
+                if (annotatedElement.kind !== ElementKind.CLASS) {// Checking Type
                     throw Exception("@${Foo::class.java.simpleName} can annotate class type.")
                 }
 
 
-                // fieldにつけると$が付いてくることがあるらしいのであればとる
+                // Take it if it seems that $ is attached to the field
                 val annotatedClassName = annotatedElement.simpleName.toString().trimDollarIfNeeded()
 
+                // Creating function
                 val funStore = createStoreFun(annotatedElement)
 
 
+                // Creating class
                 val type = annotatedElement.asType()
-                val myPrefInterface = ClassName("saiki.app.runtime","IMyPreference")
-                val genericClass = ParameterizedTypeName.get(myPrefInterface,type.asTypeName())
-                //class生成
+                val myPrefInterface = ClassName("saiki.app.runtime", "IMyPreference")
+                val genericClass = ParameterizedTypeName.get(myPrefInterface, type.asTypeName())
                 val generatingClass = TypeSpec
                         .classBuilder("${annotatedClassName}_Generated")
                         .addSuperinterface(genericClass)
                         .addFunction(funStore)
                         .build()
 
-                //書き込み
+                // Writing class
                 FileSpec.builder("saiki.app.runtime", generatingClass.name!!)
                         .addType(generatingClass)
                         .build()
@@ -84,12 +84,10 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
             throw e
         }
 
-        messager.printMessage(Diagnostic.Kind.WARNING,"My processor finish !!")
+        messager.printMessage(Diagnostic.Kind.WARNING, "My processor finish !!")
 
-        // ここで何かしらをreturnすると次のステップでごにょごにょできるらしい？
         return mutableSetOf()
     }
-
 
 
     private fun createStoreFun(annotatedElement: Element): FunSpec {
@@ -97,14 +95,14 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
         val fields = getEnclosedFields(annotatedElement)
 
-        val context = ClassName("android.content","Context")
+        val context = ClassName("android.content", "Context")
 
 
         return FunSpec
                 .builder("store")
                 .addModifiers(KModifier.OVERRIDE)
-                .addParameter("target",typeName)
-                .addParameter("context",context)
+                .addParameter("target", typeName)
+                .addParameter("context", context)
                 .addStatement("val preferences = context.getSharedPreferences(\"DATA\", Context.MODE_PRIVATE)")
                 .addStatement("val editor = preferences.edit()")
                 .addStatements(createStoreStatements(fields))
@@ -156,12 +154,11 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
 
     data class FieldSet(val name: String, val type: TypeMirror)
 
-    // 名前に含まれる$をとる
+
     private fun String.trimDollarIfNeeded(): String {
         val index = indexOf("$")
         return if (index == -1) this else substring(0, index)
     }
-
 
 
 //    val fieldSets = getEnclosedFields(annotatedElement)
