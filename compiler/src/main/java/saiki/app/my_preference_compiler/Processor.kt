@@ -15,11 +15,11 @@ import javax.lang.model.type.TypeMirror
 import javax.tools.Diagnostic
 
 
-@AutoService(Processor::class)// do not forget for auto-service
+@AutoService(Processor::class)// Do not forget for auto-service
 class MyProcessor : BasicAnnotationProcessor() {
     // Implement AbstractProcessor or BasicAnnotationProcessor
     companion object {
-        private const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"// Decided words
+        private const val KAPT_KOTLIN_GENERATED_OPTION_NAME = "kapt.kotlin.generated"// Fixed phrase
     }
 
 
