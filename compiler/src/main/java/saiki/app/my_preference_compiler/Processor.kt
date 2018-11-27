@@ -67,6 +67,8 @@ class MyProcessingStep(private val outputDir: File, private val messager: Messag
                 val type = annotatedElement.asType()
                 val myPrefInterface = ClassName("saiki.app.runtime", "IMyPreference")
                 val genericClass = ParameterizedTypeName.get(myPrefInterface, type.asTypeName())
+
+
                 val generatingClass = TypeSpec
                         .classBuilder("${annotatedClassName}_Generated")
                         .addSuperinterface(genericClass)
